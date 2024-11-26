@@ -1,0 +1,45 @@
+{
+  "extensions": [
+    "XR_EXT_dpad_binding"
+  ],
+  "actionSets": [
+    {
+      "actionSetName": "set_1",
+      "localizedActionSetName": "Action Set 1",
+      "priority": 0,
+      "actions": [
+        {
+          "actionName": "dpad_up_test",
+          "actionType": 1,
+          "subactionPaths": [
+            "/user/hand/left"
+          ],
+          "localizedActionName": "DPAD Up Test",
+          "suggestedBindings": {
+            "/interaction_profiles/oculus/touch_controller": [
+              "/user/hand/left/input/x/click",
+              "/user/hand/right/input/a/click"
+            ]
+          }
+        },
+        {
+          "actionName": "dpad_down_test",
+          "actionType": 1,
+          "subactionPaths": [
+            "/user/hand/left"
+          ],
+          "localizedActionName": "DPAD Down Test",
+          "suggestedBindings": {
+            "/interaction_profiles/oculus/touch_controller": [
+              "/user/hand/left/input/y/click",
+              "/user/hand/right/input/b/click"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "query": {
+    "frequency": 2
+  }
+}

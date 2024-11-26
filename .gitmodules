@@ -1,0 +1,6 @@
+[submodule "lib/json"]
+	path = lib/json
+	url = https://github.com/nlohmann/json
+[submodule "lib/OpenXR-SDK"]
+	path = lib/OpenXR-SDK
+	url = https://github.com/KhronosGroup/OpenXR-SDK
