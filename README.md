@@ -1,6 +1,12 @@
 # openxr-actions-tester
 
-Easy way to query and test OpenXR input. Example usage:
+Easy way to query and test OpenXR input.
+
+## Usage
+
+Create a JSON file like the ones found in `examples/` and name it `actions.json` in the working directory of the app.
+
+## Example
 
 ```json
 {
