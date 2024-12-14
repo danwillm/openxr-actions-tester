@@ -13,16 +13,23 @@ struct ActionInfo {
 };
 
 // JSON String to Char Array
-void js_to_ca(const nlohmann::json &json, const std::string &string_name, char *out_cp_array, size_t ull_length) {
-  if (out_cp_array == NULL) {
+void js_to_cp(const nlohmann::json &json, const std::string &string_name, char *out_cp_array, size_t ull_length) {
+  if (!out_cp_array) {
     return;
   }
+
+  std::string s = json.dump();
 
   json[string_name].get<std::string>().copy(out_cp_array, ull_length);
 }
 
 int main() {
   std::ifstream f("actions.json");
+  if (!f.is_open()) {
+    std::cout << "Failed to open actions file! create actions.json (from examples) in the working directory" << std::endl;
+    return 1;
+  }
+
   nlohmann::json j_file = nlohmann::json::parse(f);
 
   std::vector<std::string> vs_extensions = j_file["extensions"].get<std::vector<std::string>>();
@@ -33,7 +40,7 @@ int main() {
     XrApplicationInfo app_info = {
         .applicationName = "barebones",
         .applicationVersion = 1,
-        .engineName = "",
+        .engineName = "Test engine",
         .engineVersion = 1,
         .apiVersion = XR_MAKE_VERSION(1, 0, 0),
     };
@@ -86,8 +93,10 @@ int main() {
   }
 
   // Action Setup
-  std::vector<XrActionSet> v_action_sets(j_file["actionSets"].size());
-  std::vector<XrActiveActionSet> v_active_action_sets(j_file["actionSets"].size());
+  std::vector<XrActionSet> v_action_sets{};
+  v_action_sets.reserve(j_file["actionSets"].size());
+  std::vector<XrActiveActionSet> v_active_action_sets;
+  v_active_action_sets.reserve(j_file["actionSets"].size());
   std::vector<ActionInfo> v_action_infos{};
 
   {
@@ -98,8 +107,8 @@ int main() {
           .next = nullptr,
           .priority = j_action_set["priority"],
       };
-      js_to_ca(j_file, "actionSetName", action_set_create_info.actionSetName, XR_MAX_ACTION_SET_NAME_SIZE);
-      js_to_ca(j_file, "localizedActionSetName", action_set_create_info.localizedActionSetName, XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE);
+      js_to_cp(j_action_set, "actionSetName", action_set_create_info.actionSetName, XR_MAX_ACTION_SET_NAME_SIZE);
+      js_to_cp(j_action_set, "localizedActionSetName", action_set_create_info.localizedActionSetName, XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE);
 
       XrActionSet action_set;
       if (XrResult result = xrCreateActionSet(instance, &action_set_create_info, &action_set)) {
@@ -116,7 +125,8 @@ int main() {
         std::vector<XrPath> v_subaction_paths(j_action["subactionPaths"].size());
 
         for (int i = 0; i < v_subaction_paths.size(); i++) {
-          const char *cp_subaction_path = j_action["subactionPaths"][i].get<std::string>().c_str();
+          std::string sSubactionPath = j_action["subactionPaths"][i].get<std::string>();
+          const char *cp_subaction_path = sSubactionPath.c_str();
           if (XrResult result = xrStringToPath(instance, cp_subaction_path, &v_subaction_paths[i])) {
             std::cout << "Failed to convert subaction path: " << cp_subaction_path << " - " << result << std::endl;
             return 1;
@@ -129,8 +139,8 @@ int main() {
             .countSubactionPaths = (uint32_t)v_subaction_paths.size(),
             .subactionPaths = v_subaction_paths.data(),
         };
-        js_to_ca(j_file, "actionName", action_create_info.actionName, XR_MAX_ACTION_NAME_SIZE);
-        js_to_ca(j_file, "localizedActionName", action_create_info.localizedActionName, XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
+        js_to_cp(j_action, "actionName", action_create_info.actionName, XR_MAX_ACTION_NAME_SIZE);
+        js_to_cp(j_action, "localizedActionName", action_create_info.localizedActionName, XR_MAX_LOCALIZED_ACTION_NAME_SIZE);
 
         XrAction action;
         if (XrResult result = xrCreateAction(action_set, &action_create_info, &action)) {
@@ -139,7 +149,7 @@ int main() {
         }
 
         v_action_infos.push_back({
-            .name = j_file["localizedActionName"],
+            .name = j_action["localizedActionName"],
             .type = action_create_info.actionType,
             .actionSet = action_set,
             .action = action,
@@ -274,7 +284,7 @@ int main() {
       }
       std::cout << "=====" << std::endl;
 
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
   }
 }
