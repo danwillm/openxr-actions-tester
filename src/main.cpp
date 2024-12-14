@@ -38,9 +38,9 @@ int main() {
   XrInstance instance;
   {
     XrApplicationInfo app_info = {
-        .applicationName = "barebones",
+        .applicationName = "OpenXR Sandbox",
         .applicationVersion = 1,
-        .engineName = "Test engine",
+        .engineName = "danwillm",
         .engineVersion = 1,
         .apiVersion = XR_MAKE_VERSION(1, 0, 0),
     };
