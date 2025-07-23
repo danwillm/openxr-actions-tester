@@ -1,0 +1,26 @@
+{
+  "extensions": [
+    "XR_HTCX_vive_tracker_interaction"
+  ],
+  "actionSets": [
+    {
+      "actionSetName": "set_1",
+      "localizedActionSetName": "Action Set 1",
+      "priority": 0,
+      "actions": [
+        {
+          "actionName": "test_pose",
+          "actionType": 4,
+          "subactionPaths": [
+          ],
+          "localizedActionName": "Test Pose",
+          "suggestedBindings": {
+            "/interaction_profiles/htc/vive_tracker_htcx": [
+              "/user/vive_tracker_htcx/role/waist/input/grip/pose"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
