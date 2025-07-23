@@ -5,12 +5,21 @@
 #include "nlohmann/json.hpp"
 #include "openxr/openxr.h"
 
+#define WIN32_LEAN_AND_MEAN
+#include <unknwn.h>
+#include <windows.h>
+#include "openxr/openxr_platform.h"
+#include "profileapi.h"
+
 struct ActionInfo {
   std::string name;
   XrActionType type;
   XrActionSet actionSet;
   XrAction action;
+  XrSpace space;
 };
+
+XrPosef k_identity_pose = {.orientation = {1.f, 0.f, 0.f, 0.f}, .position = {0.f, 0.f, 0.f}};
 
 // JSON String to Char Array
 void js_to_cp(const nlohmann::json &json, const std::string &string_name, char *out_cp_array, size_t ull_length) {
@@ -23,6 +32,15 @@ void js_to_cp(const nlohmann::json &json, const std::string &string_name, char *
   json[string_name].get<std::string>().copy(out_cp_array, ull_length);
 }
 
+#define xr_get_proc(instance, name)                                                          \
+  do {                                                                                       \
+    if (xrGetInstanceProcAddr(instance, #name, (PFN_xrVoidFunction *)&name) != XR_SUCCESS) { \
+      return 1;                                                                              \
+    }                                                                                        \
+  } while (0)
+
+PFN_xrConvertWin32PerformanceCounterToTimeKHR xrConvertWin32PerformanceCounterToTimeKHR;
+
 int main() {
   std::ifstream f("actions.json");
   if (!f.is_open()) {
@@ -33,7 +51,7 @@ int main() {
   nlohmann::json j_file = nlohmann::json::parse(f);
 
   std::vector<std::string> vs_extensions = j_file["extensions"].get<std::vector<std::string>>();
-  vs_extensions.insert(vs_extensions.end(), {XR_MND_HEADLESS_EXTENSION_NAME});
+  vs_extensions.insert(vs_extensions.end(), {XR_MND_HEADLESS_EXTENSION_NAME, XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME});
 
   XrInstance instance;
   {
@@ -60,6 +78,8 @@ int main() {
       std::cout << "Failed to create instance: " << result << std::endl;
       return 1;
     }
+
+    xr_get_proc(instance, xrConvertWin32PerformanceCounterToTimeKHR);
   }
 
   XrInstanceProperties instanceProperties = {XR_TYPE_INSTANCE_PROPERTIES};
@@ -88,6 +108,17 @@ int main() {
     };
     if (XrResult result = xrCreateSession(instance, &sessionCreateInfo, &session)) {
       std::cout << "Failed to create system: " << result << std::endl;
+      return 1;
+    }
+  }
+
+  XrSpace reference_space;
+  {
+    XrReferenceSpaceCreateInfo reference_space_create_info = {
+        .type = XR_TYPE_REFERENCE_SPACE_CREATE_INFO, .referenceSpaceType = XR_REFERENCE_SPACE_TYPE_STAGE, .poseInReferenceSpace = k_identity_pose};
+
+    if (XrResult result = xrCreateReferenceSpace(session, &reference_space_create_info, &reference_space)) {
+      std::cout << "Failed to create reference space: " << result << std::endl;
       return 1;
     }
   }
@@ -148,11 +179,23 @@ int main() {
           return 1;
         }
 
+        XrSpace space = XR_NULL_HANDLE;
+        if (j_action["actionType"].get<int>() == XR_ACTION_TYPE_POSE_INPUT) {
+          XrActionSpaceCreateInfo action_space_create_info = {
+              .type = XR_TYPE_ACTION_SPACE_CREATE_INFO, .action = action, .subactionPath = XR_NULL_PATH, .poseInActionSpace = k_identity_pose};
+
+          if (XrResult result = xrCreateActionSpace(session, &action_space_create_info, &space)) {
+            std::cout << "Failed to create action space: " << result << std::endl;
+            return 1;
+          }
+        }
+
         v_action_infos.push_back({
             .name = j_action["localizedActionName"],
             .type = action_create_info.actionType,
             .actionSet = action_set,
             .action = action,
+            .space = space,
         });
 
         // get all suggested bindings
@@ -274,6 +317,37 @@ int main() {
             }
 
             std::cout << action_info.name << ": " << state_boolean.currentState << std::endl;
+            break;
+          }
+
+          case XR_ACTION_TYPE_POSE_INPUT: {
+            XrActionStatePose state_pose = {XR_TYPE_ACTION_STATE_POSE};
+            if (XrResult result = xrGetActionStatePose(session, &action_state_get_info, &state_pose)) {
+              std::cout << "Failed to get pose action: " << result << std::endl;
+              return 1;
+            }
+
+            LARGE_INTEGER performance_counter;
+            if (!QueryPerformanceCounter(&performance_counter)) {
+              std::cout << "Failed to get performance counter" << std::endl;
+              return 1;
+            }
+
+            XrTime time_now;
+            if (XrResult result = xrConvertWin32PerformanceCounterToTimeKHR(instance, &performance_counter, &time_now)) {
+              std::cout << "Failed to get performance counter: " << result << std::endl;
+              return 1;
+            }
+
+            XrSpaceLocation space_location = {XR_TYPE_SPACE_LOCATION};
+            if (XrResult result = xrLocateSpace(action_info.space, reference_space, time_now, &space_location)) {
+              std::cout << "Failed to get space location: " << result << std::endl;
+              return 1;
+            }
+
+            const XrPosef &pose_space = space_location.pose;
+            std::cout << "x: " << pose_space.position.x << ", y:" << pose_space.position.y << ", z:" << pose_space.position.z << std::endl;
+
             break;
           }
 

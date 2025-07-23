@@ -9,4 +9,5 @@ add_subdirectory(lib/OpenXR-SDK)
 
 add_executable(openxr_program src/main.cpp)
 
+target_compile_definitions(openxr_program PRIVATE -DXR_USE_PLATFORM_WIN32)
 target_link_libraries(openxr_program PRIVATE openxr_loader nlohmann_json)
