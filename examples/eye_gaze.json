@@ -1,0 +1,26 @@
+{
+  "extensions": [
+    "XR_EXT_eye_gaze_interaction"
+  ],
+  "actionSets": [
+    {
+      "actionSetName": "set_1",
+      "localizedActionSetName": "Action Set 1",
+      "priority": 0,
+      "actions": [
+        {
+          "actionName": "test_eye_gaze",
+          "actionType": 4,
+          "subactionPaths": [
+          ],
+          "localizedActionName": "Test Eye Gaze",
+          "suggestedBindings": {
+            "/interaction_profiles/ext/eye_gaze_interaction": [
+              "/user/eyes_ext/input/gaze_ext/pose"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
