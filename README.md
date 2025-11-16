@@ -4,7 +4,7 @@ Easy way to query and test OpenXR input.
 
 ## Usage
 
-Create a JSON file like the ones found in `examples/` and name it `actions.json` in the working directory of the app.
+Create a JSON file like the ones found in `examples/` and pass it as an argument on the comand line.
 
 ## Example
 

@@ -41,14 +41,23 @@ void js_to_cp(const nlohmann::json &json, const std::string &string_name, char *
 
 PFN_xrConvertWin32PerformanceCounterToTimeKHR xrConvertWin32PerformanceCounterToTimeKHR;
 
-int main() {
-  std::ifstream f("actions.json");
+int main(int argc, char **argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <actions.json>" << std::endl;
+    return 1;
+  }
+
+  const char *actions_filename = argv[1];
+
+  std::ifstream f(actions_filename);
   if (!f.is_open()) {
-    std::cout << "Failed to open actions file! create actions.json (from examples) in the working directory" << std::endl;
+    std::cout << "Failed to open actions file '" << actions_filename
+              << "'! Provide a valid JSON file as the first argument." << std::endl;
     return 1;
   }
 
   nlohmann::json j_file = nlohmann::json::parse(f);
+
 
   std::vector<std::string> vs_extensions = j_file["extensions"].get<std::vector<std::string>>();
   vs_extensions.insert(vs_extensions.end(), {XR_MND_HEADLESS_EXTENSION_NAME, XR_KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME_EXTENSION_NAME});
@@ -107,7 +116,7 @@ int main() {
         .systemId = systemId,
     };
     if (XrResult result = xrCreateSession(instance, &sessionCreateInfo, &session)) {
-      std::cout << "Failed to create system: " << result << std::endl;
+      std::cout << "Failed to create session: " << result << std::endl;
       return 1;
     }
   }
